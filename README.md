@@ -20,9 +20,9 @@ Two implementations: Python and C++, same socket protocol.
 
 ## 通用指令
 写入数据 | Save data
-'''
+’’’
 set key value  
-'''
+’’’
 get key        读取数据 | Read data
 del key        删除数据 | Delete data
 list           列出全部 | List all data
