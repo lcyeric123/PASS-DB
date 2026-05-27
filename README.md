@@ -23,10 +23,18 @@ Two implementations: Python and C++, same socket protocol.
 ```
 set key value  
 ```
-get key        读取数据 | Read data
-del key        删除数据 | Delete data
-list           列出全部 | List all data
-
+读取数据 | Read data
+```
+get key
+```
+删除数据 | Delete data
+```
+del key
+```
+列出全部 | List all data
+```
+list           
+```
 ## 安全设置
 连接密码：MY_PASS_2026
 加密密钥：0x39
@@ -34,13 +42,21 @@ list           列出全部 | List all data
 
 ## Python 使用方法
 无需第三方库，直接运行：
+```
 python server.py
+```
+```
 python client.py
+```
 
 ## C++ 编译运行
 Linux / macOS:
+```
 g++ server.cpp -o passdb_server -std=c++11
+```
+```
 g++ client.cpp -o passdb_client -std=c++11
+```
 
 Windows MinGW:
 g++ server.cpp -o passdb_server.exe -std=c++11
