@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PASS‑DB 网页版数据库</title>
+</head>
+<body>
+<h2>PASS‑DB Web</h2>
+
+<!-- 保存数据 -->
+<form action="api.php" method="post">
+Key：<input type="text" name="key" required>
+Value：<input type="text" name="value" required>
+<input type="hidden" name="cmd" value="set">
+<button type="submit">保存数据</button>
+</form>
+
+<br>
+
+<!-- 查询数据 -->
+<form action="api.php" method="post">
+Key：<input type="text" name="key" required>
+<input type="hidden" name="cmd" value="get">
+<button type="submit">查询数据</button>
+</form>
+
+<br>
+
+<!-- 删除数据 -->
+<form action="api.php" method="post">
+Key：<input type="text" name="key" required>
+<input type="hidden" name="cmd" value="del">
+<button type="submit">删除数据</button>
+</form>
+</body>
+</html>
