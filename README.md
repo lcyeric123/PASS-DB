@@ -59,5 +59,9 @@ g++ client.cpp -o passdb_client -std=c++11
 ```
 
 Windows MinGW:
+```
 g++ server.cpp -o passdb_server.exe -std=c++11
+```
+```
 g++ client.cpp -o passdb_client.exe -std=c++11
+```
