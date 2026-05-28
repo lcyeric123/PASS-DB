@@ -2,9 +2,11 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <utility>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <cstring>
 
 #define PORT 8888
 #define DB_FILE "data.txt"
@@ -44,12 +46,12 @@ void save_db(const std::vector<std::pair<std::string, std::string>> &db) {
 std::string handle_command(const std::string &cmd) {
     auto db = load_db();
     size_t pos1 = cmd.find(' ');
-    if (pos1 == std::string::npos) return "error empty";
+    if (pos1 == std::string::npos) return "error empty\n";
     std::string op = cmd.substr(0, pos1);
 
     if (op == "set") {
         size_t pos2 = cmd.find(' ', pos1 + 1);
-        if (pos2 == std::string::npos) return "error args";
+        if (pos2 == std::string::npos) return "error args\n";
         std::string k = cmd.substr(pos1 + 1, pos2 - pos1 - 1);
         std::string v = cmd.substr(pos2 + 1);
         bool found = false;
@@ -58,47 +60,80 @@ std::string handle_command(const std::string &cmd) {
         }
         if (!found) db.emplace_back(k, v);
         save_db(db);
-        return "ok";
+        return "ok\n";
     } else if (op == "get") {
         std::string k = cmd.substr(pos1 + 1);
-        for (auto &p : db) if (p.first == k) return p.second;
-        return "null";
+        for (auto &p : db) if (p.first == k) return p.second + "\n";
+        return "null\n";
     } else if (op == "del") {
         std::string k = cmd.substr(pos1 + 1);
         for (size_t i = 0; i < db.size(); i++) {
-            if (db[i].first == k) { db.erase(db.begin() + i); save_db(db); return "ok"; }
+            if (db[i].first == k) { db.erase(db.begin() + i); save_db(db); return "ok\n"; }
         }
-        return "not found";
+        return "not found\n";
     } else if (op == "list") {
         std::string res;
         for (auto &p : db) res += p.first + "=" + p.second + "\n";
+        res += "\n";
         return res;
     }
-    return "unknown cmd";
+    return "unknown cmd\n";
 }
 
 int main() {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd < 0) {
+        perror("socket failed");
+        return 1;
+    }
+
+    int opt = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = INADDR_ANY;
-    bind(server_fd, (sockaddr *)&addr, sizeof(addr));
-    listen(server_fd, 1);
-    std::cout << "PASS‑DB C++ Server running on 127.0.0.1:8888\n";
+
+    if (bind(server_fd, (sockaddr *)&addr, sizeof(addr)) < 0) {
+        perror("bind failed");
+        close(server_fd);
+        return 1;
+    }
+
+    if (listen(server_fd, 1) < 0) {
+        perror("listen failed");
+        close(server_fd);
+        return 1;
+    }
+
+    std::cout << "PASS‑DB running on 127.0.0.1:" << PORT << "\n";
 
     while (true) {
         int conn = accept(server_fd, nullptr, nullptr);
+        if (conn < 0) continue;
+
         char buf[1024]{};
-        recv(conn, buf, 1024, 0);
-        if (std::string(buf) != ACCESS_PASS) {
-            send(conn, "denied\n", 7, 0); close(conn); continue;
+        ssize_t n = recv(conn, buf, sizeof(buf)-1, 0);
+        if (n <= 0) { close(conn); continue; }
+
+        std::string authStr(buf);
+        if (authStr.find(ACCESS_PASS) == std::string::npos) {
+            send(conn, "denied\n", 7, 0);
+            close(conn);
+            continue;
         }
+
         send(conn, "auth ok\n", 8, 0);
-        recv(conn, buf, 1024, 0);
-        auto res = handle_command(std::string(buf));
-        send(conn, res.c_str(), res.size(), 0);
+        memset(buf, 0, sizeof(buf));
+        n = recv(conn, buf, sizeof(buf)-1, 0);
+        if (n > 0) {
+            std::string result = handle_command(std::string(buf));
+            send(conn, result.c_str(), result.size(), 0);
+        }
         close(conn);
     }
+
+    close(server_fd);
     return 0;
 }
